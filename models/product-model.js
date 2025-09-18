@@ -12,4 +12,4 @@ const productSchema=mongoose.productSchema({
     panelcolor:String,
     textcolor:String,
 })
-module.exports=mongoose.model('product',productSchema);
+module.exports=mongoose.model('product',productSchema);  

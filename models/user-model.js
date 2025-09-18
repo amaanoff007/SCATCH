@@ -17,7 +17,7 @@ const userSchema=mongoose.Schema({
     isadmin:Boolean,
     order:{
         type:Array,
-        default:[]
+        default:[1]
     },
     contact:Number,
     picture:String,

@@ -1,7 +1,7 @@
 const mongoose =require("mongoose");
 
 const ownerSchema=mongoose.Schema({
-    fullnamee:{
+    fullname:{
         type:String,
         minLeangth:3,
         trim:true,

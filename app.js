@@ -6,6 +6,8 @@ const path=require("path");
 const ownersRouter=require("./routes/ownersRouters");
 const productsRouter=require("./routes/productsRouter");
 const usersRouter=require("./routes/usersRouter");
+
+require("dotenv").config();
 //data base exported
 const db=require("./config/mongoose-connection");
 app.use(express.json());

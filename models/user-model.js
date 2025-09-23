@@ -1,7 +1,7 @@
 const mongoose =require("mongoose");
 
 const userSchema=mongoose.Schema({
-    fullnamee:{
+    fullname:{
         type:String,
         minLeangth:3,
         trim:true,
@@ -12,7 +12,6 @@ const userSchema=mongoose.Schema({
         type:Array,
         default:[]
     },
-    isadmin:Boolean,
     order:{
         type:Array,
         default:[]

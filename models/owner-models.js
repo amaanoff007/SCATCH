@@ -3,7 +3,7 @@ const mongoose =require("mongoose");
 const ownerSchema=mongoose.Schema({
     fullname:{
         type:String,
-        minLeangth:3,
+        minLength:3,
         trim:true,
     },
     email:String,

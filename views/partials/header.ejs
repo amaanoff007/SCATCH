@@ -10,6 +10,25 @@
 </head>
 
 <body class="font-['helvetica_now_display']">
-    <nav class="w-full fixed top-0 left-0 px-5 py-3">
-        <h3 class="text-xl">Scatch</h3>
+    <nav class="w-full fixed top-0 left-0 px-5 py-3 bg-white shadow-sm z-50">
+        <div class="flex justify-between items-center">
+            <h3 class="text-xl">Scatch</h3>
+            <div class="flex gap-4">
+                <% if (userType === 'user') { %>
+                    <!-- User navigation -->
+                    <a href="/" class="text-gray-600 hover:text-blue-500">Home</a>
+                    <a href="/shop" class="text-gray-600 hover:text-blue-500">Shop</a>
+                    <a href="/users/cart" class="text-gray-600 hover:text-blue-500">Cart</a>
+                    <a href="/logout" class="text-gray-600 hover:text-blue-500">Logout</a>
+                <% } else if (userType === 'owner') { %>
+                    <!-- Owner navigation -->
+                    <a href="/owners/myproducts" class="text-gray-600 hover:text-blue-500">All Products</a>
+                    <a href="/owners/createproducts" class="text-gray-600 hover:text-blue-500">Create Products</a>
+                    <a href="/owners/logout" class="text-gray-600 hover:text-blue-500">Logout</a>
+                <% } else { %>
+                    <!-- Not logged in - show login options -->
+                    <a href="/owners/login" class="text-gray-600 hover:text-blue-500">Owner Login</a>
+                <% } %>
+            </div>
+        </div>
     </nav>

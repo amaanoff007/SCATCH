@@ -1,46 +1,113 @@
 <%- include('./partials/header') %>
     <div class="w-full h-screen flex items-start px-20 py-20 gap-10">
-        <div class="w-[30%] rounded-md overflow-hidden">
-            <div class="w-full h-80 bg-yellow-500"></div>
-            <div class="w-full flex justify-between px-5 py-4">
-                <h3 class="text-2xl">Clinge Bag</h3>
-                <div class="flex items-center gap-2">
-                    <i class="w-7 h-7 bg-white flex rounded-full items-center justify-center ri-add-line"></i>
-                    <div class="px-2 py-1 rounded-md bg-white text-black">01</div>
-                    <i class="w-7 h-7 bg-white flex rounded-full items-center justify-center ri-subtract-line"></i>
+        <% if(user.cart && user.cart.length > 0) { %>
+            <div class="w-[30%] rounded-md overflow-hidden">
+                <div class="w-full h-80 bg-yellow-500 flex items-center justify-center">
+                    <img class="h-[12rem]" src="data:image/jpeg;base64,<%= user.cart[0].product.image.toString('base64') %>" alt="">
+                </div>
+                <div class="w-full flex justify-between px-5 py-4">
+                    <h3 class="text-2xl"><%= user.cart[0].product.name %></h3>
+                    <div class="flex items-center gap-2">
+                        <button class="w-7 h-7 bg-white flex rounded-full items-center justify-center ri-add-line"></button>
+                        <div class="px-2 py-1 rounded-md bg-white text-black"><%= user.cart[0].quantity %></div>
+                        <button class="w-7 h-7 bg-white flex rounded-full items-center justify-center ri-subtract-line"></button>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between px-5 py-3">
+                    <h4 class="text-lg">Net Total</h4>
+                    <h2 class="text-lg">₹ <%= user.cart[0].product.price * user.cart[0].quantity %></h2>
                 </div>
             </div>
-            <div class="flex items-center justify-between px-5 py-3">
-                <h4 class="text-lg">Net Total</h4>
-                <h2 class="text-lg">₹ 1200</h2>
+            <div class="w-[70%]">
+                <h3 class="text-xl">Cart Items</h3>
+                <div class="mt-5 space-y-4">
+                    <% user.cart.forEach(function(cartItem) { %>
+                        <div class="flex items-center justify-between p-4 border rounded-lg">
+                            <div class="flex items-center gap-4">
+                                <img class="w-16 h-16 object-cover rounded" src="data:image/jpeg;base64,<%= cartItem.product.image.toString('base64') %>" alt="">
+                                <div>
+                                    <h4 class="font-semibold"><%= cartItem.product.name %></h4>
+                                    <p class="text-gray-600">₹ <%= cartItem.product.price %></p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button class="w-7 h-7 bg-gray-200 flex rounded-full items-center justify-center ri-subtract-line"></button>
+                                <span class="px-3 py-1 bg-gray-100 rounded"><%= cartItem.quantity %></span>
+                                <button class="w-7 h-7 bg-gray-200 flex rounded-full items-center justify-center ri-add-line"></button>
+                                <button class="ml-4 px-3 py-1 bg-red-500 text-white rounded remove-item" data-product-id="<%= cartItem.product._id %>">Remove</button>
+                            </div>
+                        </div>
+                    <% }) %>
+                </div>
+                
+                <div class="mt-8">
+                    <h3 class="text-xl">Price Breakdown</h3>
+                    <div class="px-10 mt-5">
+                        <div class="flex mt-2">
+                            <h4 class="w-1/3">Total MRP</h4>
+                            <h4>₹ <%= user.cart.reduce((total, item) => total + (item.product.price * item.quantity), 0) %></h4>
+                        </div>
+                        <div class="flex mt-2">
+                            <h4 class="w-1/3">Discount on MRP</h4>
+                            <h4>₹ 0</h4>
+                        </div>
+                        <div class="flex mt-2">
+                            <h4 class="w-1/3">Platform Fee</h4>
+                            <h4>₹ 20</h4>
+                        </div>
+                        <div class="flex mt-2">
+                            <h4 class="w-1/3">Shipping Fee</h4>
+                            <h4>FREE</h4>
+                        </div>
+                    </div>
+                    <div class="w-full h-[1px] bg-black mt-10"></div>
+                    <div class="flex mt-5">
+                        <h3 class="w-1/3 text-xl">Total Amount</h3>
+                        <h3 class="font-semibold text-xl text-green-600">₹ <%= user.cart.reduce((total, item) => total + (item.product.price * item.quantity), 0) + 20 %></h3>
+                    </div>
+                    <button class="mt-6 px-6 py-3 bg-blue-500 text-white rounded-lg">Proceed to Checkout</button>
+                </div>
             </div>
-        </div>
-        <div class="w-[70%]">
-            <h3 class="text-xl">Price Breakdown</h3>
-            <div class="px-10 mt-5">
-                <div class="flex mt-2">
-                    <h4 class="w-1/3">Total MRP</h4>
-                    <h4>₹ 1920</h4>
-                </div>
-                <div class="flex mt-2">
-                    <h4 class="w-1/3">Discount on MRP</h4>
-                    <h4>₹ 0</h4>
-                </div>
-                <div class="flex mt-2">
-                    <h4 class="w-1/3">Platform Fee</h4>
-                    <h4>₹ 20</h4>
-                </div>
-                <div class="flex mt-2">
-                    <h4 class="w-1/3">Shipping Fee</h4>
-                    <h4>FREE</h4>
-                </div>
+        <% } else { %>
+            <div class="w-full text-center py-20">
+                <h2 class="text-2xl text-gray-600">Your cart is empty</h2>
+                <a href="/shop" class="mt-4 inline-block px-6 py-3 bg-blue-500 text-white rounded-lg">Continue Shopping</a>
             </div>
-            <div class="w-full h-[1px] bg-black mt-10"></div>
-            <div class="flex mt-5">
-                <h3 class="w-1/3 text-xl">Total Amount</h3>
-                <h3 class="font-semibold text-xl text-green-600">₹ 1940</h3>
-            </div>
-            <form action=""></form>
-        </div>
+        <% } %>
     </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const removeButtons = document.querySelectorAll('.remove-item');
+            
+            removeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const productId = this.getAttribute('data-product-id');
+                    
+                    fetch('/users/remove-from-cart', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            productId: productId
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            alert('Error removing from cart');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error removing from cart');
+                    });
+                });
+            });
+        });
+    </script>
+    
     <%- include('./partials/footer') %>

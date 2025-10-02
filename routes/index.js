@@ -10,17 +10,50 @@ router.get("/", function(req, res){
 
 router.get("/shop", isLoggedin, async function(req, res){
     try {
-        // fetch products from MongoDB
-        const products = await Product.find();
+        // Get owner filter from query parameters
+        const ownerId = req.query.owner;
+        
+        let query = {};
+        if (ownerId) {
+            query.owner = ownerId;
+        }
+        
+        // fetch products from MongoDB with optional owner filter
+        const products = await Product.find(query).populate('owner', 'fullname');
+        
+        // Get all owners for the filter dropdown
+        const Owner = require("../models/owner-models");
+        const owners = await Owner.find({}, 'fullname');
 
         // pass products into EJS
-        res.render("shop", { products });
+        res.render("shop", { products, owners, selectedOwner: ownerId });
     } catch (err) {
         console.error("Error loading products:", err);
         res.status(500).send("Error loading shop");
     }
 });
-router.get("/logout",isLoggedin,function(req,res){
-    res.render("shop");
+// Route to show products by specific owner
+router.get("/owner/:ownerId", isLoggedin, async function(req, res){
+    try {
+        const ownerId = req.params.ownerId;
+        
+        // fetch products from specific owner
+        const products = await Product.find({ owner: ownerId }).populate('owner', 'fullname');
+        
+        // Get all owners for the filter dropdown
+        const Owner = require("../models/owner-models");
+        const owners = await Owner.find({}, 'fullname');
+
+        // pass products into EJS
+        res.render("shop", { products, owners, selectedOwner: ownerId });
+    } catch (err) {
+        console.error("Error loading owner products:", err);
+        res.status(500).send("Error loading owner products");
+    }
+});
+
+router.get("/logout", function(req,res){
+    res.cookie("token", "");
+    res.redirect("/");
 })
 module.exports = router;

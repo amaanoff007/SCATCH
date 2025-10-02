@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const ownerModel = require("../models/owner-models");
 const Product = require("../models/product-model"); // Product schema
+const upload = require("../config/multer-config");
+const { registerOwner, loginOwner, logoutOwner } = require("../controllers/authController");
+const isOwnerLoggedIn = require("../middlewares/isOwnerLoggedIn");
 console.log("NODE_ENV is:", process.env.NODE_ENV);
 
 // ----------------- Owner Routes -----------------
@@ -30,25 +33,30 @@ if (process.env.NODE_ENV === "development") {
 
 // ----------------- Product Routes -----------------
 // GET: Render create product page
-router.get("/createproducts", (req, res) => {
-  res.render("createproducts", { success: "" }); // pass default value
+router.get("/createproducts", isOwnerLoggedIn, (req, res) => {
+  res.render("createproducts", { success: "" });
 });
 
 // POST: Create a new product
-router.post("/createproducts", async (req, res) => {
+router.post("/createproducts", isOwnerLoggedIn, upload.single("image"), async (req, res) => {
   try {
     const { name, price, discount, bgcolor, panelcolor, textcolor } = req.body;
-    // handle file upload for image if needed; placeholder here
-    const imageBuffer = Buffer.alloc(0); // empty buffer for now
+    
+    // Handle file upload for image
+    let imageBuffer = Buffer.alloc(0);
+    if (req.file) {
+      imageBuffer = req.file.buffer;
+    }
 
     const product = new Product({
       name,
-      price,
-      discount,
+      price: parseFloat(price),
+      discount: parseFloat(discount) || 0,
       bgcolor,
       panelcolor,
       textcolor,
       image: imageBuffer,
+      owner: req.owner._id, // Associate product with the logged-in owner
     });
 
     await product.save();
@@ -58,6 +66,28 @@ router.post("/createproducts", async (req, res) => {
     res.render("createproducts", { success: "Error creating product!" });
   }
 });
+
+// ----------------- Owner Products Routes -----------------
+// GET: View all products uploaded by the logged-in owner
+router.get("/myproducts", isOwnerLoggedIn, async (req, res) => {
+  try {
+    const products = await Product.find({ owner: req.owner._id });
+    res.render("owner-products", { products });
+  } catch (err) {
+    console.error("Error loading owner products:", err);
+    res.status(500).send("Error loading your products");
+  }
+});
+
+// ----------------- Owner Authentication Routes -----------------
+router.get("/login", (req, res) => {
+  const errors = req.flash("error");
+  res.render("owner-login", { error: errors[0] });
+});
+
+router.post("/login", loginOwner);
+router.post("/register", registerOwner);
+router.get("/logout", logoutOwner);
 
 // ----------------- Admin Route -----------------
 // Optional: if /owners/admin should redirect to create products

@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 // Define schema correctly
 const productSchema = new mongoose.Schema({
-    image: String,       // you might want Buffer for image if storing binary
+    image: Buffer,       // you might want Buffer for image if storing binary
     name: String,
     price: Number,
     discount: {
@@ -12,6 +12,11 @@ const productSchema = new mongoose.Schema({
     bgcolor: String,
     panelcolor: String,
     textcolor: String,
+    owner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'owner',
+        required: true
+    }
 });
 
 // Export model

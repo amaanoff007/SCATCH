@@ -1,15 +1,23 @@
-const mongoose=require('mongosse');
+const mongoose = require('mongoose');
 
-const productSchema=mongoose.productSchema({
-    image:String,
-    name:String,
-    price:Number,
-    discount:{
-        type:Number,
-        default:0,
+// Define schema correctly
+const productSchema = new mongoose.Schema({
+    image: Buffer,       // you might want Buffer for image if storing binary
+    name: String,
+    price: Number,
+    discount: {
+        type: Number,
+        default: 0,
     },
-    bgcolor:String,
-    panelcolor:String,
-    textcolor:String,
-})
-module.exports=mongoose.model('product',productSchema);  
+    bgcolor: String,
+    panelcolor: String,
+    textcolor: String,
+    owner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'owner',
+        required: true
+    }
+});
+
+// Export model
+module.exports = mongoose.model('Product', productSchema);

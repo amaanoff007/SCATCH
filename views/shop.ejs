@@ -1,0 +1,119 @@
+<%- include('./partials/header') %>
+    <div class="w-full h-screen flex items-start px-20 py-20">
+        <div class="w-[25%] flex h-screen flex-col items-start">
+            <div class="flex items-center gap-2">
+                <h3>sort by</h3>
+                <form action="/shop">
+                    <select class="border-[1px] px-2 py-1" name="sortby" id="">
+                        <option value="popular">Popular</option>
+                        <option value="newest">Newest</option>
+                    </select>
+                </form>
+            </div>
+            <div class="flex flex-col mt-20">
+                <a class="block w-fit mb-2" href="">New Collection</a>
+                <a class="block w-fit mb-2 <%= !selectedOwner ? 'text-blue-500 font-semibold' : 'text-gray-600 hover:text-blue-500' %>" href="/shop">All Products</a>
+                <a class="block w-fit mb-2" href="">Discounted Products</a>
+            </div>
+            <div class="flex flex-col mt-8">
+                <h4 class="mb-3 font-semibold">Filter by Owner:</h4>
+                <form action="/shop" method="get" class="flex flex-col gap-2">
+                    <select name="owner" class="border-[1px] px-2 py-1 rounded" onchange="this.form.submit()">
+                        <option value="">All Owners</option>
+                        <% if (typeof owners !== 'undefined') { %>
+                            <% owners.forEach(function(owner) { %>
+                                <option value="<%= owner._id %>" <%= selectedOwner === owner._id.toString() ? 'selected' : '' %>>
+                                    <%= owner.fullname %>
+                                </option>
+                            <% }) %>
+                        <% } %>
+                    </select>
+                </form>
+                <% if (selectedOwner) { %>
+                    <a href="/shop" class="mt-2 text-sm text-blue-500 hover:text-blue-700">Clear Filter</a>
+                <% } %>
+                
+                <!-- Quick owner links -->
+                <div class="mt-4">
+                    <h5 class="mb-2 text-sm font-medium">Quick Links:</h5>
+                    <% if (typeof owners !== 'undefined') { %>
+                        <% owners.forEach(function(owner) { %>
+                            <a href="/owner/<%= owner._id %>" class="block text-sm text-gray-600 hover:text-blue-500 mb-1">
+                                <%= owner.fullname %>'s Products
+                            </a>
+                        <% }) %>
+                    <% } %>
+                </div>
+            </div>
+            <div class="mt-32">
+                <a class="block w-fit mb-2" href="">Filter by :</a>
+                <a class="block w-fit mb-2" href="">Availability</a>
+                <a class="block w-fit mb-2" href="">Discount</a>
+            </div>
+        </div>
+        <div class="w-[75%] flex flex-col gap-5 h-screen">
+            <div class="flex items-start gap-5">
+                <% products.forEach(function(product){ %>
+                    <div class="w-60">
+                        <div class="w-full h-52 flex items-center justify-center bg-[<%= product.bgcolor %>]">
+                            <img class="h-[12rem]" src="data:image/jpeg;base64,<%= product.image.toString('base64') %>"
+                                alt="">
+                        </div>
+                        <div
+                            class="flex justify-between bg-[<%= product.panelcolor %>] items-center px-4 py-4 text-[<%= product.textcolor %>]">
+                            <div>
+                                <h3>
+                                    <%= product.name %>
+                                </h3>
+                                <h4>₹ <%= product.price %>
+                                </h4>
+                                <% if (product.owner && product.owner.fullname) { %>
+                                    <p class="text-sm opacity-75">by <%= product.owner.fullname %></p>
+                                <% } %>
+                            </div>
+                            <button class="w-7 h-7 flex items-center justify-center rounded-full bg-white add-to-cart" data-product-id="<%= product._id %>">
+                                <i class="ri-add-line"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <% }) %>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const addToCartButtons = document.querySelectorAll('.add-to-cart');
+            
+            addToCartButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const productId = this.getAttribute('data-product-id');
+                    
+                    fetch('/users/add-to-cart', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            productId: productId,
+                            quantity: 1
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Product added to cart!');
+                        } else {
+                            alert('Error adding to cart');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error adding to cart');
+                    });
+                });
+            });
+        });
+    </script>
+    
+    <%- include('./partials/footer') %>

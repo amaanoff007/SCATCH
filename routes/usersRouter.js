@@ -4,6 +4,7 @@ const Product = require('../models/product-model');
 const router= express.Router();
 const isLoggedin=require("../middlewares/isLoggedIn");
 const {registerUser,loginUser,logout}=require("../controllers/authController");
+const { processPurchase, getUserOrders, cancelOrder, getOrderDetails } = require('../controllers/orderController');
 
 router.get("/",function(req,res){
   res.send("hey its working");
@@ -69,5 +70,11 @@ router.post("/remove-from-cart", isLoggedin, async function(req, res) {
     res.status(500).json({ error: "Error removing from cart" });
   }
 });
+
+// Order management routes
+router.post("/buy", isLoggedin, processPurchase);
+router.get("/orders", isLoggedin, getUserOrders);
+router.post("/cancel-order/:orderId", isLoggedin, cancelOrder);
+router.get("/order/:orderId", isLoggedin, getOrderDetails);
 
 module.exports=router;

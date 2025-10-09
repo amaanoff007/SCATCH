@@ -1,0 +1,245 @@
+<%- include('./partials/header') %>
+
+<div class="w-full min-h-screen px-20 py-10">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold">My Orders</h1>
+        <a href="/shop" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+            Continue Shopping
+        </a>
+    </div>
+
+    <% if(orders && orders.length > 0) { %>
+        <div class="space-y-6">
+            <% orders.forEach(function(order) { %>
+                <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-lg font-semibold">Order #<%= order.orderNumber %></h3>
+                            <p class="text-gray-600">Placed on <%= order.orderDate.toLocaleDateString() %></p>
+                        </div>
+                        <div class="text-right">
+                            <span class="px-3 py-1 rounded-full text-sm font-medium
+                                <%= order.status === 'confirmed' ? 'bg-green-100 text-green-800' : 
+                                    order.status === 'cancelled' ? 'bg-red-100 text-red-800' : 
+                                    'bg-yellow-100 text-yellow-800' %>">
+                                <%= order.status.charAt(0).toUpperCase() + order.status.slice(1) %>
+                            </span>
+                            <p class="text-lg font-bold text-green-600 mt-1">$<%= order.totalAmount %></p>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h4 class="font-medium mb-2">Items:</h4>
+                        <div class="space-y-2">
+                            <% order.items.forEach(function(item) { %>
+                                <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                                    <div class="flex items-center gap-3">
+                                        <img class="w-12 h-12 object-cover rounded" 
+                                             src="data:image/jpeg;base64,<%= item.product.image.toString('base64') %>" 
+                                             alt="<%= item.product.name %>">
+                                        <div>
+                                            <p class="font-medium"><%= item.product.name %></p>
+                                            <p class="text-sm text-gray-600">Quantity: <%= item.quantity %></p>
+                                        </div>
+                                    </div>
+                                    <p class="font-medium">$<%= (item.price * item.quantity).toFixed(2) %></p>
+                                </div>
+                            <% }) %>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <div class="text-sm text-gray-600">
+                            <% if(order.status === 'confirmed') { %>
+                                <p>You can cancel this order until: <strong><%= order.cancellationDeadline.toLocaleString() %></strong></p>
+                            <% } else if(order.status === 'cancelled') { %>
+                                <p>Cancelled on: <strong><%= order.cancelledAt.toLocaleString() %></strong></p>
+                            <% } %>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <% if(order.status === 'confirmed' && order.canBeCancelled()) { %>
+                                <button class="cancel-order-btn px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                        data-order-id="<%= order._id %>">
+                                    Cancel Order
+                                </button>
+                            <% } else if(order.status === 'confirmed' && !order.canBeCancelled()) { %>
+                                <span class="px-4 py-2 bg-gray-300 text-gray-600 rounded-lg cursor-not-allowed">
+                                    Cancellation Period Expired
+                                </span>
+                            <% } %>
+                            
+                            <button class="view-details-btn px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                                    data-order-id="<%= order._id %>">
+                                View Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+    <% } else { %>
+        <div class="text-center py-20">
+            <div class="text-6xl mb-4">📦</div>
+            <h2 class="text-2xl text-gray-600 mb-4">No orders yet</h2>
+            <p class="text-gray-500 mb-6">Start shopping to see your orders here</p>
+            <a href="/shop" class="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                Start Shopping
+            </a>
+        </div>
+    <% } %>
+</div>
+
+<!-- Order Details Modal -->
+<div id="orderModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold">Order Details</h3>
+            <button id="closeModal" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        </div>
+        <div id="modalContent">
+            <!-- Order details will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cancelButtons = document.querySelectorAll('.cancel-order-btn');
+    const viewDetailsButtons = document.querySelectorAll('.view-details-btn');
+    const modal = document.getElementById('orderModal');
+    const closeModal = document.getElementById('closeModal');
+    const modalContent = document.getElementById('modalContent');
+
+    // Cancel order functionality
+    cancelButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const orderId = this.getAttribute('data-order-id');
+            
+            if (confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
+                this.disabled = true;
+                this.textContent = 'Cancelling...';
+                
+                fetch(`/users/cancel-order/${orderId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.error);
+                        this.disabled = false;
+                        this.textContent = 'Cancel Order';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error cancelling order');
+                    this.disabled = false;
+                    this.textContent = 'Cancel Order';
+                });
+            }
+        });
+    });
+
+    // View order details functionality
+    viewDetailsButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const orderId = this.getAttribute('data-order-id');
+            
+            fetch(`/users/order/${orderId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.order) {
+                    const order = data.order;
+                    modalContent.innerHTML = `
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <h4 class="font-semibold">Order Number</h4>
+                                    <p>${order.orderNumber}</p>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold">Order Date</h4>
+                                    <p>${new Date(order.orderDate).toLocaleString()}</p>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold">Status</h4>
+                                    <span class="px-2 py-1 rounded text-sm ${order.status === 'confirmed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                        ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                    </span>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold">Total Amount</h4>
+                                    <p class="font-bold text-green-600">$${order.totalAmount}</p>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h4 class="font-semibold mb-2">Items</h4>
+                                <div class="space-y-2">
+                                    ${order.items.map(item => `
+                                        <div class="flex items-center justify-between p-3 border rounded">
+                                            <div class="flex items-center gap-3">
+                                                <img class="w-12 h-12 object-cover rounded" 
+                                                     src="data:image/jpeg;base64,${item.product.image.toString('base64')}" 
+                                                     alt="${item.product.name}">
+                                                <div>
+                                                    <p class="font-medium">${item.product.name}</p>
+                                                    <p class="text-sm text-gray-600">Quantity: ${item.quantity}</p>
+                                                </div>
+                                            </div>
+                                            <p class="font-medium">$${(item.price * item.quantity).toFixed(2)}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            
+                            ${order.status === 'confirmed' ? `
+                                <div class="bg-yellow-50 p-3 rounded">
+                                    <p class="text-sm"><strong>Cancellation Deadline:</strong> ${new Date(order.cancellationDeadline).toLocaleString()}</p>
+                                </div>
+                            ` : ''}
+                            
+                            ${order.status === 'cancelled' ? `
+                                <div class="bg-red-50 p-3 rounded">
+                                    <p class="text-sm"><strong>Cancelled On:</strong> ${new Date(order.cancelledAt).toLocaleString()}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                } else {
+                    alert('Error loading order details');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error loading order details');
+            });
+        });
+    });
+
+    // Close modal functionality
+    closeModal.addEventListener('click', function() {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    });
+
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    });
+});
+</script>
+
+<%- include('./partials/footer') %>

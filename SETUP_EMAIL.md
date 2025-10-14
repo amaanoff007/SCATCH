@@ -1,7 +1,7 @@
 # Email Setup Instructions
 
 ## Overview
-The application now includes email functionality for purchase confirmations and order cancellations. Follow these steps to set up email notifications.
+The application now includes email functionality for purchase confirmations and order cancellations, along with Redis caching for improved performance. Follow these steps to set up email notifications and Redis caching.
 
 ## Email Configuration
 
@@ -27,9 +27,49 @@ EXPRESS_SESSION_SECRET=your-session-secret-key-here
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASS=your-16-character-app-password
 
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
+
 # Environment
 NODE_ENV=development
 ```
+
+## Redis Setup
+
+### 1. Install Redis
+**Windows:**
+- Download Redis from https://github.com/microsoftarchive/redis/releases
+- Install and start Redis service
+
+**macOS:**
+```bash
+brew install redis
+brew services start redis
+```
+
+**Linux (Ubuntu/Debian):**
+```bash
+sudo apt update
+sudo apt install redis-server
+sudo systemctl start redis-server
+sudo systemctl enable redis-server
+```
+
+### 2. Verify Redis Installation
+```bash
+redis-cli ping
+# Should return: PONG
+```
+
+### 3. Redis Configuration
+The application uses Redis for:
+- **Session Storage**: Persistent sessions across server restarts
+- **Product Caching**: Faster product loading
+- **Cart Persistence**: Cart data survives browser refresh
+- **Email Queue**: Reliable email delivery with retry logic
 
 ### 3. Alternative Email Services
 You can modify `config/email-config.js` to use other email services:

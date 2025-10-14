@@ -1,21 +1,54 @@
 <%- include('./partials/header') %>
     <div class="w-full h-screen flex items-start px-20 py-20 gap-10">
+        <!-- Debug information -->
+        <div style="position: fixed; top: 10px; right: 10px; background: #f0f0f0; padding: 10px; border: 1px solid #ccc; z-index: 1000; font-size: 12px; max-width: 300px;">
+            <strong>Debug Info:</strong><br>
+            Cart length: <%= user.cart ? user.cart.length : 'undefined' %><br>
+            <% if(user.cart && user.cart.length > 0) { %>
+                First item name: <%= user.cart[0].productName || 'undefined' %><br>
+                First item price: <%= user.cart[0].productPrice || 'undefined' %><br>
+                First item image type: <%= typeof user.cart[0].productImage %><br>
+                First item image length: <%= user.cart[0].productImage ? user.cart[0].productImage.length : 'undefined' %><br>
+            <% } %>
+        </div>
+        
         <% if(user.cart && user.cart.length > 0) { %>
             <div class="w-[30%] rounded-md overflow-hidden">
                 <div class="w-full h-80 bg-yellow-500 flex items-center justify-center">
-                    <img class="h-[12rem]" src="data:image/jpeg;base64,<%= user.cart[0].product.image.toString('base64') %>" alt="">
+                    <% 
+                        let mainImageSrc = '';
+                        if (user.cart[0].productImage) {
+                            if (typeof user.cart[0].productImage === 'string') {
+                                // Check if it's already a data URL
+                                if (user.cart[0].productImage.startsWith('data:')) {
+                                    mainImageSrc = user.cart[0].productImage;
+                                } else {
+                                    mainImageSrc = 'data:image/jpeg;base64,' + user.cart[0].productImage;
+                                }
+                            } else if (user.cart[0].productImage.toString && typeof user.cart[0].productImage.toString === 'function') {
+                                mainImageSrc = 'data:image/jpeg;base64,' + user.cart[0].productImage.toString('base64');
+                            }
+                        }
+                    %>
+                    <% if(mainImageSrc) { %>
+                        <img class="h-[12rem]" src="<%= mainImageSrc %>" alt="">
+                    <% } else { %>
+                        <div class="text-white text-center">
+                            <p>Image not available</p>
+                        </div>
+                    <% } %>
                 </div>
                 <div class="w-full flex justify-between px-5 py-4">
-                    <h3 class="text-2xl"><%= user.cart[0].product.name %></h3>
+                    <h3 class="text-2xl"><%= user.cart[0].productName || 'Unknown Product' %></h3>
                     <div class="flex items-center gap-2">
                         <button class="w-7 h-7 bg-white flex rounded-full items-center justify-center ri-add-line"></button>
-                        <div class="px-2 py-1 rounded-md bg-white text-black"><%= user.cart[0].quantity %></div>
+                        <div class="px-2 py-1 rounded-md bg-white text-black"><%= user.cart[0].quantity || 0 %></div>
                         <button class="w-7 h-7 bg-white flex rounded-full items-center justify-center ri-subtract-line"></button>
                     </div>
                 </div>
                 <div class="flex items-center justify-between px-5 py-3">
                     <h4 class="text-lg">Net Total</h4>
-                    <h2 class="text-lg">₹ <%= user.cart[0].product.price * user.cart[0].quantity %></h2>
+                    <h2 class="text-lg">₹ <%= (parseFloat(user.cart[0].productPrice) || 0) * (parseInt(user.cart[0].quantity) || 0) %></h2>
                 </div>
             </div>
             <div class="w-[70%]">
@@ -24,17 +57,38 @@
                     <% user.cart.forEach(function(cartItem) { %>
                         <div class="flex items-center justify-between p-4 border rounded-lg">
                             <div class="flex items-center gap-4">
-                                <img class="w-16 h-16 object-cover rounded" src="data:image/jpeg;base64,<%= cartItem.product.image.toString('base64') %>" alt="">
+                                <% 
+                                    let imageSrc = '';
+                                    if (cartItem.productImage) {
+                                        if (typeof cartItem.productImage === 'string') {
+                                            // Check if it's already a data URL
+                                            if (cartItem.productImage.startsWith('data:')) {
+                                                imageSrc = cartItem.productImage;
+                                            } else {
+                                                imageSrc = 'data:image/jpeg;base64,' + cartItem.productImage;
+                                            }
+                                        } else if (cartItem.productImage.toString && typeof cartItem.productImage.toString === 'function') {
+                                            imageSrc = 'data:image/jpeg;base64,' + cartItem.productImage.toString('base64');
+                                        }
+                                    }
+                                %>
+                                <% if(imageSrc) { %>
+                                    <img class="w-16 h-16 object-cover rounded" src="<%= imageSrc %>" alt="">
+                                <% } else { %>
+                                    <div class="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
+                                        <span class="text-gray-500 text-xs">No Image</span>
+                                    </div>
+                                <% } %>
                                 <div>
-                                    <h4 class="font-semibold"><%= cartItem.product.name %></h4>
-                                    <p class="text-gray-600">₹ <%= cartItem.product.price %></p>
+                                    <h4 class="font-semibold"><%= cartItem.productName || 'Unknown Product' %></h4>
+                                    <p class="text-gray-600">₹ <%= cartItem.productPrice || '0' %></p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
                                 <button class="w-7 h-7 bg-gray-200 flex rounded-full items-center justify-center ri-subtract-line"></button>
                                 <span class="px-3 py-1 bg-gray-100 rounded"><%= cartItem.quantity %></span>
                                 <button class="w-7 h-7 bg-gray-200 flex rounded-full items-center justify-center ri-add-line"></button>
-                                <button class="ml-4 px-3 py-1 bg-red-500 text-white rounded remove-item" data-product-id="<%= cartItem.product._id %>">Remove</button>
+                                <button class="ml-4 px-3 py-1 bg-red-500 text-white rounded remove-item" data-product-id="<%= cartItem.productId || 'NO_ID' %>" data-debug="<%= JSON.stringify(cartItem) %>">Remove</button>
                             </div>
                         </div>
                     <% }) %>
@@ -45,7 +99,11 @@
                     <div class="px-10 mt-5">
                         <div class="flex mt-2">
                             <h4 class="w-1/3">Total MRP</h4>
-                            <h4>₹ <%= user.cart.reduce((total, item) => total + (item.product.price * item.quantity), 0) %></h4>
+                            <h4>₹ <%= user.cart.reduce((total, item) => {
+                                const price = parseFloat(item.productPrice) || 0;
+                                const qty = parseInt(item.quantity) || 0;
+                                return total + (price * qty);
+                            }, 0) %></h4>
                         </div>
                         <div class="flex mt-2">
                             <h4 class="w-1/3">Discount on MRP</h4>
@@ -63,7 +121,11 @@
                     <div class="w-full h-[1px] bg-black mt-10"></div>
                     <div class="flex mt-5">
                         <h3 class="w-1/3 text-xl">Total Amount</h3>
-                        <h3 class="font-semibold text-xl text-green-600">₹ <%= user.cart.reduce((total, item) => total + (item.product.price * item.quantity), 0) + 20 %></h3>
+                        <h3 class="font-semibold text-xl text-green-600">₹ <%= user.cart.reduce((total, item) => {
+                            const price = parseFloat(item.productPrice) || 0;
+                            const qty = parseInt(item.quantity) || 0;
+                            return total + (price * qty);
+                        }, 0) + 20 %></h3>
                     </div>
                     <div class="flex gap-4 mt-6">
                         <button id="buyNowBtn" class="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
@@ -92,27 +154,37 @@
             removeButtons.forEach(button => {
                 button.addEventListener('click', function() {
                     const productId = this.getAttribute('data-product-id');
+                    const debugData = this.getAttribute('data-debug');
+                    console.log('Removing product:', productId);
+                    console.log('Debug data:', debugData);
+                    console.log('Button element:', this);
                     
-                    fetch('/users/remove-from-cart', {
+                    if (!productId || productId === 'NO_ID') {
+                        alert('Product ID not found. Debug: ' + debugData);
+                        return;
+                    }
+                    
+                    fetch(`/users/remove-from-cart/${productId}`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            productId: productId
-                        })
+                        }
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('Remove response status:', response.status);
+                        return response.json();
+                    })
                     .then(data => {
+                        console.log('Remove response data:', data);
                         if (data.success) {
                             location.reload();
                         } else {
-                            alert('Error removing from cart');
+                            alert('Error removing from cart: ' + (data.error || 'Unknown error'));
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        alert('Error removing from cart');
+                        alert('Error removing from cart: ' + error.message);
                     });
                 });
             });

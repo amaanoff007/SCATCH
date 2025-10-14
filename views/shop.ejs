@@ -56,8 +56,21 @@
                 <% products.forEach(function(product){ %>
                     <div class="w-60">
                         <div class="w-full h-52 flex items-center justify-center bg-[<%= product.bgcolor %>]">
-                            <img class="h-[12rem]" src="data:image/jpeg;base64,<%= product.image.toString('base64') %>"
-                                alt="">
+                            <% if (product.image) { %>
+                                <% if (typeof product.image === 'string') { %>
+                                    <img class="h-[12rem]" src="data:image/jpeg;base64,<%= product.image %>" alt="">
+                                <% } else if (product.image.toString && typeof product.image.toString === 'function') { %>
+                                    <img class="h-[12rem]" src="data:image/jpeg;base64,<%= product.image.toString('base64') %>" alt="">
+                                <% } else { %>
+                                    <div class="text-white text-center">
+                                        <p>Image not available</p>
+                                    </div>
+                                <% } %>
+                            <% } else { %>
+                                <div class="text-white text-center">
+                                    <p>No image</p>
+                                </div>
+                            <% } %>
                         </div>
                         <div
                             class="flex justify-between bg-[<%= product.panelcolor %>] items-center px-4 py-4 text-[<%= product.textcolor %>]">

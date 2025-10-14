@@ -5,6 +5,8 @@ const router= express.Router();
 const isLoggedin=require("../middlewares/isLoggedIn");
 const {registerUser,loginUser,logout}=require("../controllers/authController");
 const { processPurchase, getUserOrders, cancelOrder, getOrderDetails } = require('../controllers/orderController');
+const { addToCart, getCart, updateCartItem, removeFromCart, clearCart, getCartCount, isItemInCart } = require('../controllers/cartController');
+const { loadUserCart, migrateCartFromSession } = require('../middlewares/cartMiddleware');
 
 router.get("/",function(req,res){
   res.send("hey its working");
@@ -16,60 +18,51 @@ router.post("/login",loginUser);
 
 router.get("/logout",logout);
 
-// Cart functionality
-router.post("/add-to-cart", isLoggedin, async function(req, res) {
+// Cart functionality with Redis
+router.post("/add-to-cart", isLoggedin, addToCart);
+router.get("/cart", isLoggedin, loadUserCart, async function(req, res) {
   try {
-    const { productId, quantity = 1 } = req.body;
-    const product = await Product.findById(productId);
-    
-    if (!product) {
-      return res.status(404).json({ error: "Product not found" });
-    }
-
     const user = await userModel.findById(req.user._id);
-    const existingItem = user.cart.find(item => item.product.toString() === productId);
     
-    if (existingItem) {
-      existingItem.quantity += parseInt(quantity);
+    // Use the properly formatted cart data from the middleware
+    // Don't override with raw database cart structure
+    const cartData = req.cart || [];
+    const cartSummary = req.cartSummary || { totalItems: 0, totalPrice: 0, itemCount: 0, items: [] };
+    
+    // Debug logging
+    console.log('Cart data for user:', req.user._id);
+    console.log('Cart items count:', cartData ? cartData.length : 0);
+    if (cartData && cartData.length > 0) {
+      console.log('First cart item:', JSON.stringify(cartData[0], null, 2));
+      console.log('ProductImage type:', typeof cartData[0].productImage);
+      console.log('ProductPrice type:', typeof cartData[0].productPrice);
+      console.log('ProductPrice value:', cartData[0].productPrice);
     } else {
-      user.cart.push({
-        product: productId,
-        quantity: parseInt(quantity)
-      });
+      console.log('No cart items found');
     }
     
-    await user.save();
-    res.json({ success: true, message: "Product added to cart" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Error adding to cart" });
-  }
-});
-
-router.get("/cart", isLoggedin, async function(req, res) {
-  try {
-    const user = await userModel.findById(req.user._id).populate('cart.product');
-    res.render("cart", { user });
+    res.render("cart", { 
+      user: {
+        ...user.toObject(),
+        cart: cartData,
+        cartSummary: cartSummary
+      }, 
+      cart: cartData, 
+      cartSummary: cartSummary 
+    });
   } catch (err) {
     console.error(err);
     res.status(500).send("Error loading cart");
   }
 });
+router.post("/update-cart-item", isLoggedin, updateCartItem);
+router.post("/remove-from-cart/:productId", isLoggedin, removeFromCart);
+router.post("/clear-cart", isLoggedin, clearCart);
+router.get("/cart-count", isLoggedin, getCartCount);
+router.get("/cart-item/:productId", isLoggedin, isItemInCart);
 
-router.post("/remove-from-cart", isLoggedin, async function(req, res) {
-  try {
-    const { productId } = req.body;
-    const user = await userModel.findById(req.user._id);
-    
-    user.cart = user.cart.filter(item => item.product.toString() !== productId);
-    await user.save();
-    
-    res.json({ success: true, message: "Product removed from cart" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Error removing from cart" });
-  }
-});
+// Cart API endpoints
+router.get("/cart-api", isLoggedin, getCart);
 
 // Order management routes
 router.post("/buy", isLoggedin, processPurchase);

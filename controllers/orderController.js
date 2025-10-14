@@ -2,7 +2,9 @@ const Order = require('../models/order-model');
 const Product = require('../models/product-model');
 const userModel = require('../models/user-model');
 const ownerModel = require('../models/owner-models');
-const { sendPurchaseEmails, sendCancellationEmails } = require('../services/emailService');
+const EmailQueueService = require('../services/emailQueueService');
+const DatabaseCartService = require('../services/databaseCartService');
+const ProductCacheService = require('../services/productCacheService');
 
 // Ensure User model is registered for population
 const User = require('../models/user-model');
@@ -10,9 +12,12 @@ const User = require('../models/user-model');
 // Process purchase from cart
 const processPurchase = async (req, res) => {
   try {
-    const user = await userModel.findById(req.user._id).populate('cart.product');
+    const userId = req.user._id;
     
-    if (!user.cart || user.cart.length === 0) {
+    // Get cart from database
+    const cartItems = await DatabaseCartService.getCart(userId);
+    
+    if (!cartItems || cartItems.length === 0) {
       return res.status(400).json({ error: 'Cart is empty' });
     }
 
@@ -20,26 +25,28 @@ const processPurchase = async (req, res) => {
     let totalAmount = 0;
     const orderItems = [];
 
-    for (const cartItem of user.cart) {
-      const product = cartItem.product;
-      const itemTotal = product.price * cartItem.quantity;
+    for (const cartItem of cartItems) {
+      const itemTotal = parseFloat(cartItem.productPrice) * parseInt(cartItem.quantity);
       totalAmount += itemTotal;
 
       orderItems.push({
-        product: product._id,
+        product: cartItem.productId,
         quantity: cartItem.quantity,
-        price: product.price
+        price: cartItem.productPrice
       });
     }
 
     // Create order
     const order = new Order({
-      user: user._id,
+      user: userId,
       items: orderItems,
       totalAmount: totalAmount
     });
 
     await order.save();
+
+    // Clear the cart after successful purchase
+    await DatabaseCartService.clearCart(userId);
 
     // Populate order with product details for email
     const populatedOrder = await Order.findById(order._id)
@@ -51,17 +58,15 @@ const processPurchase = async (req, res) => {
     const firstProduct = await Product.findById(orderItems[0].product).populate('owner');
     const owner = firstProduct.owner;
 
-    // Send emails
+    // Queue emails for sending
     try {
-      await sendPurchaseEmails(populatedOrder, user, owner);
+      await EmailQueueService.queuePurchaseEmails(populatedOrder, req.user, owner);
     } catch (emailError) {
-      console.error('Email sending failed:', emailError);
-      // Don't fail the order if email fails
+      console.error('Email queuing failed:', emailError);
+      // Don't fail the order if email queuing fails
     }
 
-    // Clear user's cart
-    user.cart = [];
-    await user.save();
+    // Cart is already cleared above using Redis
 
     res.json({ 
       success: true, 
@@ -120,12 +125,12 @@ const cancelOrder = async (req, res) => {
     const firstProduct = await Product.findById(order.items[0].product).populate('owner');
     const owner = firstProduct.owner;
 
-    // Send cancellation emails
+    // Queue cancellation emails
     try {
-      await sendCancellationEmails(order, order.user, owner);
+      await EmailQueueService.queueCancellationEmails(order, order.user, owner);
     } catch (emailError) {
-      console.error('Email sending failed:', emailError);
-      // Don't fail the cancellation if email fails
+      console.error('Email queuing failed:', emailError);
+      // Don't fail the cancellation if email queuing fails
     }
 
     res.json({ 

@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const isLoggedin = require("../middlewares/isLoggedIn");
-const Product = require("../models/product-model"); // <-- import product schema
+const Product = require("../models/product-model");
+const ProductCacheService = require("../services/productCacheService");
+const CartService = require("../services/cartService");
 
 router.get("/", function(req, res){
    const errors = req.flash("error");
@@ -13,13 +15,14 @@ router.get("/shop", isLoggedin, async function(req, res){
         // Get owner filter from query parameters
         const ownerId = req.query.owner;
         
-        let query = {};
+        let products;
         if (ownerId) {
-            query.owner = ownerId;
+            // Get products by specific owner with caching
+            products = await ProductCacheService.getProductsByOwner(ownerId);
+        } else {
+            // Get all products with caching
+            products = await ProductCacheService.getAllProducts();
         }
-        
-        // fetch products from MongoDB with optional owner filter
-        const products = await Product.find(query).populate('owner', 'fullname');
         
         // Get all owners for the filter dropdown
         const Owner = require("../models/owner-models");
@@ -37,8 +40,8 @@ router.get("/owner/:ownerId", isLoggedin, async function(req, res){
     try {
         const ownerId = req.params.ownerId;
         
-        // fetch products from specific owner
-        const products = await Product.find({ owner: ownerId }).populate('owner', 'fullname');
+        // Get products by specific owner with caching
+        const products = await ProductCacheService.getProductsByOwner(ownerId);
         
         // Get all owners for the filter dropdown
         const Owner = require("../models/owner-models");

@@ -313,3 +313,6 @@ The Redis implementation significantly improves the Scatch application's perform
 For questions or issues, refer to the troubleshooting section or check the health endpoints for service status.
 
 
+
+
+

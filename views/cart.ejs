@@ -1,7 +1,7 @@
 <%- include('./partials/header') %>
     <div class="w-full h-screen flex items-start px-20 py-20 gap-10">
         <!-- Debug information -->
-        <div style="position: fixed; top: 10px; right: 10px; background: #f0f0f0; padding: 10px; border: 1px solid #ccc; z-index: 1000; font-size: 12px; max-width: 300px;">
+        <!-- <div style="position: fixed; top: 10px; right: 10px; background: #f0f0f0; padding: 10px; border: 1px solid #ccc; z-index: 1000; font-size: 12px; max-width: 300px;">
             <strong>Debug Info:</strong><br>
             Cart length: <%= user.cart ? user.cart.length : 'undefined' %><br>
             <% if(user.cart && user.cart.length > 0) { %>
@@ -10,7 +10,7 @@
                 First item image type: <%= typeof user.cart[0].productImage %><br>
                 First item image length: <%= user.cart[0].productImage ? user.cart[0].productImage.length : 'undefined' %><br>
             <% } %>
-        </div>
+        </div> -->
         
         <% if(user.cart && user.cart.length > 0) { %>
             <div class="w-[30%] rounded-md overflow-hidden">
